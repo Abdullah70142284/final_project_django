@@ -1,24 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 const CreateQuizForm = ({ onQuizCreate }) => {
   const [quizTitle, setQuizTitle] = useState("");
   const [questions, setQuestions] = useState([]);
   const [questionCount, setQuestionCount] = useState(0);
   const [optionCount, setOptionCount] = useState(0);
-
-  // useEffect(() => {
-  // if (optionCount < 2 || optionCount >6){
-  //   setQuestions([]);
-    
-  // }
-
-  // if (questionCount > 0 && optionCount > 0) {
-  //   generateQuestions(questionCount, optionCount);
-  // }
-  // }, [questionCount, optionCount]);
-
-  const navigate = useNavigate();
 
   const generateQuestions = (totalQuestions, totalOptions) => {
     setQuestions((previousQuestions) => {
@@ -135,8 +121,6 @@ const CreateQuizForm = ({ onQuizCreate }) => {
     setQuestions([]);
     setQuestionCount(0);
     setOptionCount(0);
-
-    navigate("/home/list");
   };
 
   return (

@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
+import { getAttempts } from "../services/api";
 import "./Dashboard.css"; 
 
 function QuizDashboard() {
-  const [attempts, setAttempts] = useState([]);
   const [filtered, setFiltered] = useState([]);
+  const [allUsernames, setAllUsernames] = useState([]);
 
   const [filters, setFilters] = useState({
-    username:"",
+    username: "",
     quiz: "",
     startDate: "",
     endDate: "",
@@ -14,46 +15,33 @@ function QuizDashboard() {
   });
 
   useEffect(() => {
-    const data = JSON.parse(localStorage.getItem("attempts")) || [];
-    setAttempts(data);
-    setFiltered(data);
+    const fetchAttempts = async () => {
+      const data = await getAttempts();
+      setFiltered(data);
+      
+      const usernames = [...new Set(data.map(a => a.username))];
+      setAllUsernames(usernames);
+    };
+    fetchAttempts();
   }, []);
 
   useEffect(() => {
-    let result = [...attempts];
-
-   if (filters.username) {
-      result = result.filter((a) => a.username === filters.username);
-    }
+    const applyFilters = async () => {
+      const filterParams = {};
+      
+      if (filters.username) filterParams.username = filters.username;
+      if (filters.quiz.trim()) filterParams.quiz_title = filters.quiz;
+      if (filters.startDate) filterParams.start_date = filters.startDate;
+      if (filters.endDate) filterParams.end_date = filters.endDate;
+      if (filters.minScore) filterParams.min_score = filters.minScore;
+      
+      const data = await getAttempts(filterParams);
+      setFiltered(data);
+    };
     
-    if (filters.quiz.trim()) {
-      result = result.filter((a) =>
-        a.quizTitle.toLowerCase().includes(filters.quiz.toLowerCase())
-      );
-    }
+    applyFilters();
+  }, [filters]);
 
-    if (filters.startDate) {
-      result = result.filter(
-        (a) => new Date(a.date) >= new Date(filters.startDate)
-      );
-    }
-
-    if (filters.endDate) {
-      result = result.filter(
-        (a) => new Date(a.date) <= new Date(filters.endDate)
-      );
-    }
-
-    if (filters.minScore) {
-      result = result.filter(
-        (a) => (a.score / a.total) * 100 >= Number(filters.minScore)
-      );
-    }
-
-    setFiltered(result);
-  }, [filters, attempts]);
-
-  // Helper function for cleaner input handling
   const handleFilterChange = (key, value) => {
     setFilters({ ...filters, [key]: value });
   };
@@ -68,12 +56,12 @@ function QuizDashboard() {
           value={filters.username}
           onChange={(e) => handleFilterChange("username", e.target.value)}
         >
-        <option value="">All Users</option>
-        {attempts.map((a, i) => (
-        <option key={i} value={a.username}>
-        {a.username}
-        </option>
-        ))}
+          <option value="">All Users</option>
+          {allUsernames.map((username, i) => (
+            <option key={i} value={username}>
+              {username}
+            </option>
+          ))}
         </select>
 
         <input
@@ -113,11 +101,11 @@ function QuizDashboard() {
           {filtered.map((a, i) => (
             <tr key={i}>
               <td>{a.username}</td>
-              <td>{a.quizTitle}</td>
+              <td>{a.quiz_title}</td>
               <td>
-                {a.score}/{a.total} ({Math.round((a.score / a.total) * 100)}%)
+                {a.score}/{a.total_questions} ({Math.round((a.score / a.total_questions) * 100)}%)
               </td>
-              <td>{a.date}</td>
+              <td>{new Date(a.attempted_at).toLocaleString()}</td>
             </tr>
           ))}
         </tbody>

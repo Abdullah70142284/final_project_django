@@ -1,5 +1,6 @@
-import { useState,useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { signup } from '../services/api';
 
 function SignUp() {
   const [username, setUsername] = useState('');
@@ -9,26 +10,36 @@ function SignUp() {
   const navigate = useNavigate();
 
   useEffect(() => {
-        const loggedInUser = localStorage.getItem("loggedIn");
-        if (loggedInUser) {
-          navigate("/home");
-        }
-      }, [navigate]);
+    const loggedInUser = localStorage.getItem("loggedIn");
+    if (loggedInUser) {
+      navigate("/home");
+    }
+  }, [navigate]);
   
-  const handleSignUp = () => {
+  const handleSignUp = async () => {
     if (password !== confirmPassword) {
       alert('Passwords do not match');
       return;
     }
-    const users = JSON.parse(localStorage.getItem('users')) || [];
-    const existingUser = users.find(u => u.username === username && u.email === email);
-    if (existingUser) {
-      alert('Username already exists');
-      return;
+    
+    try {
+      const user = await signup(username, email, password);
+      localStorage.setItem('loggedIn', JSON.stringify(user));
+      navigate('/home');
+    } catch (error) {
+      if (error.response?.data) {
+        const errors = error.response.data;
+        if (errors.username) {
+          alert(`Username: ${errors.username[0]}`);
+        } else if (errors.email) {
+          alert(`Email: ${errors.email[0]}`);
+        } else {
+          alert('Signup failed. Please try again.');
+        }
+      } else {
+        alert('Network error. Please check your connection.');
+      }
     }
-    users.push({ username,email, password });
-    localStorage.setItem('users', JSON.stringify(users));
-    navigate('/');
   };
 
   return (

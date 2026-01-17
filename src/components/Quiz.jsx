@@ -1,21 +1,44 @@
-import { useState } from "react";
-import { useParams,useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import Result from "./result";
 import Question from "./Question";
-import { setItemInDb, getQuizById } from "./repo";
+import { setItemInDb, getQuizByIdFromAPI } from "../services/quizService";
 
 function Quiz() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const quiz = getQuizById(id); //using repo.js
+  const [quiz, setQuiz] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [current, setCurrent] = useState(0);
+  const [selectedAnswers, setSelectedAnswers] = useState([]);
+  const [showResult, setShowResult] = useState(false);
 
+  useEffect(() => {
+    const fetchQuiz = async () => {
+      const data = await getQuizByIdFromAPI(id);
+      if (data) {
+        // Transform API response to match component expectations
+        const transformedQuiz = {
+          id: data.id,
+          title: data.title,
+          questions: data.questions.map(q => ({
+            question: q.question_text,
+            options: q.options,
+            answer: q.correct_answer
+          }))
+        };
+        setQuiz(transformedQuiz);
+        setSelectedAnswers(Array(transformedQuiz.questions.length).fill(null));
+      }
+      setLoading(false);
+    };
+    fetchQuiz();
+  }, [id]);
+
+  if (loading) return <p>Loading quiz...</p>;
   if (!quiz) return <p>Quiz not found.</p>;
 
   const questions = quiz.questions;
-
-  const [current, setCurrent] = useState(0);
-  const [selectedAnswers, setSelectedAnswers] = useState(Array(questions.length).fill(null));
-  const [showResult, setShowResult] = useState(false);
 
   const handleSelect = (index) => {
     const updatedAnswers = [...selectedAnswers];
@@ -35,13 +58,7 @@ function Quiz() {
     if (current > 0) setCurrent((prev) => prev - 1);
   };
 
-  const resetQuiz = () => {
-    setCurrent(0);
-    setSelectedAnswers(Array(questions.length).fill(null));
-    setShowResult(false);
-  };
-
-  const handleBackToHome =()=>{
+  const handleBackToHome = () => {
     navigate("/home");
   };
 
@@ -51,10 +68,14 @@ function Quiz() {
     }, 0);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const score = showScore();
-    setItemInDb(quiz.id, quiz.title,score, questions, selectedAnswers);
-    setShowResult(true);
+    try {
+      await setItemInDb(quiz.id, quiz.title, score, questions, selectedAnswers);
+      setShowResult(true);
+    } catch (error) {
+      alert('Failed to submit quiz. Please try again.');
+    }
   };
 
   return (

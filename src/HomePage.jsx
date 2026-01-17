@@ -3,27 +3,12 @@ import Quiz from "./components/quiz";
 import CreateQuizForm from "./components/CreatQuizForm";
 import ListQuizzes from "./components/ListQuizzes";
 import { useState, useEffect } from "react";
-import { getQuizzes, addQuiz } from "./components/repo";
+import { getAllQuizzes, saveQuizzes } from "./services/quizService";
 import QuizDashBoard from "./components/Dashboard";
-import axios from "axios";
 
 function Home() {
   const [quizzes, setQuizzes] = useState([]);
-  const [backendMessage, setBackendMessage] = useState("");
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const fetchMessage = async () => {
-      try {
-        const res = await axios.get("http://localhost:5000/home");
-        setBackendMessage(res.data.message);
-      } catch (err) {
-        console.error("Error connecting to backend:", err);
-      }
-    };
-
-    fetchMessage();
-  }, []);
 
   useEffect(() => {
     const loggedInUser = localStorage.getItem("loggedIn");
@@ -33,12 +18,21 @@ function Home() {
   }, [navigate]);
 
   useEffect(() => {
-    setQuizzes(getQuizzes());
+    const fetchQuizzes = async () => {
+      const data = await getAllQuizzes();
+      setQuizzes(data);
+    };
+    fetchQuizzes();
   }, []);
 
-  const handleQuizCreate = (newQuiz) => {
-    const quizWithId = addQuiz(newQuiz);
-    setQuizzes((prev) => [...prev, quizWithId]);
+  const handleQuizCreate = async (newQuiz) => {
+    try {
+      const createdQuiz = await saveQuizzes(newQuiz);
+      setQuizzes((prev) => [...prev, createdQuiz]);
+      navigate("/home/list");
+    } catch (error) {
+      alert('Failed to create quiz. Please try again.');
+    }
   };
 
   const handleLogout = () => {
@@ -67,7 +61,6 @@ function Home() {
       >
         Logout
       </button>
-      <p>Backend says: {backendMessage}</p>
       <Routes>
         
         {/* Home Page */}
