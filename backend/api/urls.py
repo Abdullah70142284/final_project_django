@@ -7,9 +7,9 @@ urlpatterns = [
     path('users/login/', views.login, name='login'),
     
     # Quiz endpoints
-    path('quizzes/', views.quiz_list, name='quiz-list'),
-    path('quizzes/<int:pk>/', views.quiz_detail, name='quiz-detail'),
+    path('quizzes/', views.QuizListCreate.as_view(), name='quiz-list'),
+    path('quizzes/<int:pk>/', views.QuizDetail.as_view(), name='quiz-detail'),
     
     # Attempt endpoints
-    path('attempts/', views.attempt_list, name='attempt-list'),
+    path('attempts/', views.AttemptListCreate.as_view(), name='attempt-list'),
 ]
